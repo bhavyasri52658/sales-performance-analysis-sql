@@ -1,0 +1,280 @@
+-- 1. CREATE SALES TABLE
+
+CREATE TABLE sales_data (
+    sale_id INT PRIMARY KEY,
+    product_name VARCHAR(50),
+    category VARCHAR(50),
+    region VARCHAR(50),
+    salesperson VARCHAR(50),
+    quantity INT,
+    unit_price NUMERIC(10,2),
+    sale_date DATE,
+    sale_status VARCHAR(20)
+);
+
+
+-- 2. INSERT SAMPLE DATA
+
+INSERT INTO sales_data VALUES
+(1, 'Laptop', 'Electronics', 'South', 'Ananya', 2, 50000, '2026-01-05', 'Completed'),
+(2, 'Phone', 'Electronics', 'North', 'Rahul', 3, 20000, '2026-01-08', 'Completed'),
+(3, 'Chair', 'Furniture', 'South', 'Priya', 5, 3000, '2026-01-12', 'Completed'),
+(4, 'Desk', 'Furniture', 'West', 'Arjun', 2, 8000, '2026-01-15', 'Cancelled'),
+(5, 'Headphones', 'Electronics', 'East', 'Sneha', 4, 2500, '2026-02-02', 'Completed'),
+(6, 'Laptop', 'Electronics', 'West', 'Rahul', 1, 50000, '2026-02-10', 'Completed'),
+(7, 'Chair', 'Furniture', 'North', 'Ananya', 4, 3000, '2026-02-14', 'Completed'),
+(8, 'Phone', 'Electronics', 'South', 'Priya', 2, 20000, '2026-02-18', 'Completed'),
+(9, 'Desk', 'Furniture', 'East', 'Arjun', 3, 8000, '2026-03-03', 'Completed'),
+(10, 'Headphones', 'Electronics', 'North', 'Sneha', 5, 2500, '2026-03-07', 'Completed'),
+(11, 'Laptop', 'Electronics', 'East', 'Ananya', 2, 50000, '2026-03-12', 'Completed'),
+(12, 'Chair', 'Furniture', 'West', 'Rahul', 6, 3000, '2026-03-18', 'Completed'),
+(13, 'Phone', 'Electronics', 'North', 'Priya', 1, 20000, '2026-04-02', 'Completed'),
+(14, 'Desk', 'Furniture', 'South', 'Sneha', 4, 8000, '2026-04-09', 'Completed'),
+(15, 'Headphones', 'Electronics', 'West', 'Arjun', 3, 2500, '2026-04-15', 'Cancelled'),
+(16, 'Laptop', 'Electronics', 'South', 'Rahul', 1, 50000, '2026-04-20', 'Completed'),
+(17, 'Chair', 'Furniture', 'East', 'Priya', 5, 3000, '2026-05-05', 'Completed'),
+(18, 'Phone', 'Electronics', 'West', 'Ananya', 3, 20000, '2026-05-11', 'Completed'),
+(19, 'Desk', 'Furniture', 'North', 'Sneha', 2, 8000, '2026-05-16', 'Completed'),
+(20, 'Headphones', 'Electronics', 'South', 'Arjun', 6, 2500, '2026-05-22', 'Completed');
+
+
+-- 3. VIEW ALL SALES
+
+SELECT *
+FROM sales_data;
+
+
+-- 4. TOTAL REVENUE FROM COMPLETED SALES
+
+SELECT
+    SUM(quantity * unit_price) AS total_revenue
+FROM sales_data
+WHERE sale_status = 'Completed';
+
+
+-- 5. TOTAL NUMBER OF SALES
+
+SELECT
+    COUNT(*) AS total_sales
+FROM sales_data;
+
+
+-- 6. REVENUE BY PRODUCT
+
+SELECT
+    product_name,
+    SUM(quantity * unit_price) AS total_revenue
+FROM sales_data
+WHERE sale_status = 'Completed'
+GROUP BY product_name
+ORDER BY total_revenue DESC;
+
+
+-- 7. REVENUE BY CATEGORY
+
+SELECT
+    category,
+    SUM(quantity * unit_price) AS category_revenue
+FROM sales_data
+WHERE sale_status = 'Completed'
+GROUP BY category
+ORDER BY category_revenue DESC;
+
+
+-- 8. REVENUE BY REGION
+
+SELECT
+    region,
+    SUM(quantity * unit_price) AS regional_revenue
+FROM sales_data
+WHERE sale_status = 'Completed'
+GROUP BY region
+ORDER BY regional_revenue DESC;
+
+
+-- 9. SALESPERSON PERFORMANCE
+
+SELECT
+    salesperson,
+    COUNT(*) AS completed_sales,
+    SUM(quantity * unit_price) AS total_revenue
+FROM sales_data
+WHERE sale_status = 'Completed'
+GROUP BY salesperson
+ORDER BY total_revenue DESC;
+
+
+-- 10. MONTHLY REVENUE
+
+SELECT
+    DATE_TRUNC('month', sale_date)::DATE AS sales_month,
+    SUM(quantity * unit_price) AS monthly_revenue
+FROM sales_data
+WHERE sale_status = 'Completed'
+GROUP BY DATE_TRUNC('month', sale_date)
+ORDER BY sales_month;
+
+
+-- 11. MONTH-OVER-MONTH REVENUE GROWTH
+
+WITH monthly_sales AS (
+    SELECT
+        DATE_TRUNC('month', sale_date)::DATE AS sales_month,
+        SUM(quantity * unit_price) AS revenue
+    FROM sales_data
+    WHERE sale_status = 'Completed'
+    GROUP BY DATE_TRUNC('month', sale_date)
+),
+sales_with_previous AS (
+    SELECT
+        sales_month,
+        revenue,
+        LAG(revenue) OVER (
+            ORDER BY sales_month
+        ) AS previous_month_revenue
+    FROM monthly_sales
+)
+SELECT
+    sales_month,
+    revenue,
+    previous_month_revenue,
+    ROUND(
+        100.0 * (revenue - previous_month_revenue)
+        / NULLIF(previous_month_revenue, 0),
+        2
+    ) AS growth_percentage
+FROM sales_with_previous
+ORDER BY sales_month;
+
+
+-- 12. TOP 3 PRODUCTS BY REVENUE
+
+SELECT
+    product_name,
+    SUM(quantity * unit_price) AS total_revenue
+FROM sales_data
+WHERE sale_status = 'Completed'
+GROUP BY product_name
+ORDER BY total_revenue DESC
+LIMIT 3;
+
+
+-- 13. QUANTITY SOLD BY PRODUCT
+
+SELECT
+    product_name,
+    SUM(quantity) AS total_units_sold
+FROM sales_data
+WHERE sale_status = 'Completed'
+GROUP BY product_name
+ORDER BY total_units_sold DESC;
+
+
+-- 14. SALES STATUS SUMMARY
+
+SELECT
+    sale_status,
+    COUNT(*) AS number_of_sales
+FROM sales_data
+GROUP BY sale_status;
+
+
+-- 15. CANCELLATION RATE
+
+SELECT
+    COUNT(*) AS total_sales,
+    COUNT(*) FILTER (
+        WHERE sale_status = 'Cancelled'
+    ) AS cancelled_sales,
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE sale_status = 'Cancelled'
+        ) / COUNT(*),
+        2
+    ) AS cancellation_rate
+FROM sales_data;
+
+
+-- 16. AVERAGE COMPLETED SALE VALUE
+
+SELECT
+    ROUND(
+        AVG(quantity * unit_price),
+        2
+    ) AS average_sale_value
+FROM sales_data
+WHERE sale_status = 'Completed';
+
+
+-- 17. REGION-WISE CATEGORY PERFORMANCE
+
+SELECT
+    region,
+    category,
+    SUM(quantity * unit_price) AS total_revenue
+FROM sales_data
+WHERE sale_status = 'Completed'
+GROUP BY region, category
+ORDER BY region, total_revenue DESC;
+
+
+-- 18. RANK SALESPERSONS BY REVENUE
+
+SELECT
+    salesperson,
+    SUM(quantity * unit_price) AS total_revenue,
+    RANK() OVER (
+        ORDER BY SUM(quantity * unit_price) DESC
+    ) AS revenue_rank
+FROM sales_data
+WHERE sale_status = 'Completed'
+GROUP BY salesperson
+ORDER BY revenue_rank;
+
+
+-- 19. RUNNING TOTAL OF MONTHLY REVENUE
+
+WITH monthly_sales AS (
+    SELECT
+        DATE_TRUNC('month', sale_date)::DATE AS sales_month,
+        SUM(quantity * unit_price) AS revenue
+    FROM sales_data
+    WHERE sale_status = 'Completed'
+    GROUP BY DATE_TRUNC('month', sale_date)
+)
+SELECT
+    sales_month,
+    revenue,
+    SUM(revenue) OVER (
+        ORDER BY sales_month
+    ) AS running_revenue
+FROM monthly_sales
+ORDER BY sales_month;
+
+
+-- 20. FINAL SALES KPI DASHBOARD
+
+SELECT
+    COUNT(*) AS total_sales_records,
+    COUNT(*) FILTER (
+        WHERE sale_status = 'Completed'
+    ) AS completed_sales,
+    COUNT(*) FILTER (
+        WHERE sale_status = 'Cancelled'
+    ) AS cancelled_sales,
+    SUM(quantity * unit_price) FILTER (
+        WHERE sale_status = 'Completed'
+    ) AS total_revenue,
+    ROUND(
+        AVG(quantity * unit_price) FILTER (
+            WHERE sale_status = 'Completed'
+        ),
+        2
+    ) AS average_sale_value,
+    ROUND(
+        100.0 * COUNT(*) FILTER (
+            WHERE sale_status = 'Cancelled'
+        ) / COUNT(*),
+        2
+    ) AS cancellation_rate
+FROM sales_data;
